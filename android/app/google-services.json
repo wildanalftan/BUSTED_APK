@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "982257734467",
+    "project_id": "tugasbesarapb",
+    "storage_bucket": "tugasbesarapb.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:982257734467:android:56c3d520f3a6f4de1c95f6",
+        "android_client_info": {
+          "package_name": "com.bustedworld.bustedworld"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDXVkOBYH4rzJHVLXssZrLgaFQiTEEa1ag"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
