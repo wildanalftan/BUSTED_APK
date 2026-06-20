@@ -9,7 +9,6 @@ import '../../features/shop/presentation/pages/product_detail_page.dart';
 import '../../features/cart/presentation/pages/cart_page.dart';
 import '../../features/checkout/presentation/pages/checkout_page.dart';
 import '../../features/checkout/presentation/pages/order_success_page.dart';
-import '../../features/checkout/presentation/pages/midtrans_payment_page.dart';
 import '../../features/admin/presentation/pages/admin_dashboard_page.dart';
 import '../../features/admin/presentation/pages/admin_products_page.dart';
 import '../../features/admin/presentation/pages/admin_users_page.dart';
@@ -100,17 +99,6 @@ final routerProvider = Provider<GoRouter>((ref) {
         path: '/order_success',
         name: 'order_success',
         pageBuilder: (c, s) => _buildPage(c, s, const OrderSuccessPage()),
-      ),
-      GoRoute(
-        path: '/midtrans_payment',
-        name: 'midtrans_payment',
-        pageBuilder: (c, s) {
-          final extra = s.extra as Map<String, dynamic>;
-          final paymentUrl = extra['paymentUrl'] as String;
-          final orderId = extra['orderId'] as String;
-          return _buildPage(
-              c, s, MidtransPaymentPage(paymentUrl: paymentUrl, orderId: orderId));
-        },
       ),
       GoRoute(
         path: '/admin',
