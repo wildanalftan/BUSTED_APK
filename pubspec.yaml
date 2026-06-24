@@ -48,6 +48,7 @@ dependencies:
   geolocator: ^14.0.0
   firebase_core: ^4.10.0
   firebase_auth: ^6.5.2
+  firebase_messaging: ^16.4.1
   cloud_firestore: ^6.5.0
   flutter_local_notifications: ^18.0.1
   webview_flutter: ^4.10.0

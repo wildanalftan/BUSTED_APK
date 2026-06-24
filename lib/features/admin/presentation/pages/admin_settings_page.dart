@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../../core/providers/theme_provider.dart';
+import '../../../../core/services/notification_service.dart';
 import '../../../../core/theme/app_theme.dart';
 
 class AdminSettingsPage extends ConsumerWidget {
@@ -29,11 +31,53 @@ class AdminSettingsPage extends ConsumerWidget {
             icon: Icons.notifications_active_outlined,
             title: 'Notification Preferences',
             subtitle: 'Configure system push alerts',
-            onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                  content:
-                      Text('Notification preferences saved successfully!')),
-            ),
+            onTap: () async {
+              final token = await LocalNotificationService.getFcmToken();
+              if (context.mounted) {
+                showDialog(
+                  context: context,
+                  builder: (context) => AlertDialog(
+                    title: const Text('FCM Token (Android)'),
+                    content: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Copy this token to the Firebase Console to send a test push notification to this device:',
+                          style: TextStyle(fontSize: 13),
+                        ),
+                        const SizedBox(height: 12),
+                        SelectableText(
+                          token ?? 'Unable to retrieve FCM token. Make sure Firebase is initialized and you are online.',
+                          style: const TextStyle(
+                            fontFamily: 'monospace',
+                            fontSize: 12,
+                            color: Colors.blueAccent,
+                          ),
+                        ),
+                      ],
+                    ),
+                    actions: [
+                      if (token != null)
+                        TextButton(
+                          onPressed: () {
+                            Clipboard.setData(ClipboardData(text: token));
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('FCM Token copied to clipboard!')),
+                            );
+                          },
+                          child: const Text('COPY'),
+                        ),
+                      TextButton(
+                        onPressed: () => Navigator.pop(context),
+                        child: const Text('CLOSE'),
+                      ),
+                    ],
+                  ),
+                );
+              }
+            },
           ),
           _buildTile(
             context,

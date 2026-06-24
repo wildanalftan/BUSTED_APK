@@ -4,6 +4,7 @@ class UserEntity {
   final String password;
   final bool isAdmin;
   final bool isBlocked;
+  final String? fcmToken;
 
   UserEntity({
     required this.name,
@@ -11,6 +12,7 @@ class UserEntity {
     required this.password,
     this.isAdmin = false,
     this.isBlocked = false,
+    this.fcmToken,
   });
 
   Map<String, dynamic> toJson() {
@@ -20,6 +22,7 @@ class UserEntity {
       'password': password,
       'isAdmin': isAdmin,
       'isBlocked': isBlocked,
+      if (fcmToken != null) 'fcmToken': fcmToken,
     };
   }
 
@@ -30,6 +33,7 @@ class UserEntity {
       password: json['password'] as String,
       isAdmin: json['isAdmin'] as bool? ?? false,
       isBlocked: json['isBlocked'] as bool? ?? false,
+      fcmToken: json['fcmToken'] as String?,
     );
   }
 
@@ -39,6 +43,7 @@ class UserEntity {
     String? password,
     bool? isAdmin,
     bool? isBlocked,
+    String? fcmToken,
   }) {
     return UserEntity(
       name: name ?? this.name,
@@ -46,6 +51,7 @@ class UserEntity {
       password: password ?? this.password,
       isAdmin: isAdmin ?? this.isAdmin,
       isBlocked: isBlocked ?? this.isBlocked,
+      fcmToken: fcmToken ?? this.fcmToken,
     );
   }
 }

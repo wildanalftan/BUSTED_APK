@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import '../../domain/entities/user.dart';
+import '../../../../core/services/notification_service.dart';
 
 class UsersNotifier extends Notifier<List<UserEntity>> {
   @override
@@ -93,12 +94,14 @@ class CurrentUserNotifier extends Notifier<UserEntity?> {
                 password: data['password'] ?? '',
                 isAdmin: data['isAdmin'] ?? false,
                 isBlocked: data['isBlocked'] ?? false,
+                fcmToken: data['fcmToken'] as String?,
               );
               if (u.isBlocked) {
                 await FirebaseAuth.instance.signOut();
                 state = null;
               } else {
                 state = u;
+                _updateFcmToken(firebaseUser.uid);
               }
           } else {
               state = UserEntity(name: 'User', email: firebaseUser.email ?? '', password: '');
@@ -109,6 +112,20 @@ class CurrentUserNotifier extends Notifier<UserEntity?> {
         }
       }
     });
+  }
+
+  Future<void> _updateFcmToken(String uid) async {
+    try {
+      final token = await LocalNotificationService.getFcmToken();
+      if (token != null) {
+        await FirebaseFirestore.instance.collection('users').doc(uid).update({
+          'fcmToken': token,
+        });
+        debugPrint('Successfully updated FCM token for user $uid in Firestore');
+      }
+    } catch (e) {
+      debugPrint('Failed to update FCM token in Firestore: $e');
+    }
   }
 
   Future<String?> loginWithCredentials(String email, String password) async {
@@ -125,12 +142,14 @@ class CurrentUserNotifier extends Notifier<UserEntity?> {
             password: data['password'] ?? '',
             isAdmin: data['isAdmin'] ?? false,
             isBlocked: data['isBlocked'] ?? false,
+            fcmToken: data['fcmToken'] as String?,
           );
           if (u.isBlocked) {
             await FirebaseAuth.instance.signOut();
             return 'Your account has been blocked by the Administrator.';
           }
           state = u;
+          _updateFcmToken(cred.user!.uid);
         } else {
           state = UserEntity(name: 'User', email: email, password: '');
         }
@@ -150,6 +169,17 @@ class CurrentUserNotifier extends Notifier<UserEntity?> {
   }
 
   Future<void> logout() async {
+    final firebaseUser = FirebaseAuth.instance.currentUser;
+    if (firebaseUser != null) {
+      try {
+        await FirebaseFirestore.instance.collection('users').doc(firebaseUser.uid).update({
+          'fcmToken': FieldValue.delete(),
+        });
+        debugPrint('Successfully cleared FCM token on logout');
+      } catch (e) {
+        debugPrint('Failed to clear FCM token on logout: $e');
+      }
+    }
     await FirebaseAuth.instance.signOut();
   }
 }

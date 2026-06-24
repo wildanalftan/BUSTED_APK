@@ -1,5 +1,16 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+
+@pragma('vm:entry-point')
+Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  debugPrint("[Background FCM] Message received: ${message.messageId}");
+  final notification = message.notification;
+  if (notification != null) {
+    debugPrint("[Background FCM] Title: ${notification.title}");
+    debugPrint("[Background FCM] Body: ${notification.body}");
+  }
+}
 
 class LocalNotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
@@ -9,6 +20,10 @@ class LocalNotificationService {
     if (kIsWeb) return; // Not supported on web
 
     try {
+      // 1. Setup Firebase Messaging Background Handler
+      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+      // 2. Initialize Local Notifications
       const AndroidInitializationSettings initializationSettingsAndroid =
           AndroidInitializationSettings('@mipmap/ic_launcher');
 
@@ -31,7 +46,21 @@ class LocalNotificationService {
         },
       );
 
-      // Request permissions
+      // 3. Listen to Foreground Messages
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        debugPrint('[FCM] Foreground message received: ${message.messageId}');
+        final notification = message.notification;
+        if (notification != null) {
+          showNotification(
+            id: message.hashCode,
+            title: notification.title ?? '',
+            body: notification.body ?? '',
+            payload: message.data['orderId'],
+          );
+        }
+      });
+
+      // 4. Request permissions
       await requestPermissions();
       debugPrint('[LocalNotificationService] Initialized successfully');
     } catch (e) {
@@ -41,14 +70,26 @@ class LocalNotificationService {
 
   static Future<void> requestPermissions() async {
     try {
-      // Request Android permissions (Android 13+)
+      // Request FCM permissions
+      final messaging = FirebaseMessaging.instance;
+      await messaging.requestPermission(
+        alert: true,
+        announcement: false,
+        badge: true,
+        carPlay: false,
+        criticalAlert: false,
+        provisional: false,
+        sound: true,
+      );
+
+      // Request Android local notification permissions (Android 13+)
       final androidPlugin = _notificationsPlugin
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
       if (androidPlugin != null) {
         await androidPlugin.requestNotificationsPermission();
       }
 
-      // Request iOS permissions
+      // Request iOS local notification permissions
       final iosPlugin = _notificationsPlugin
           .resolvePlatformSpecificImplementation<IOSFlutterLocalNotificationsPlugin>();
       if (iosPlugin != null) {
@@ -60,6 +101,18 @@ class LocalNotificationService {
       }
     } catch (e) {
       debugPrint('[LocalNotificationService] Error requesting permissions: $e');
+    }
+  }
+
+  static Future<String?> getFcmToken() async {
+    if (kIsWeb) return null;
+    try {
+      final token = await FirebaseMessaging.instance.getToken();
+      debugPrint('[LocalNotificationService] FCM Token: $token');
+      return token;
+    } catch (e) {
+      debugPrint('[LocalNotificationService] Error getting FCM Token: $e');
+      return null;
     }
   }
 
