@@ -52,7 +52,7 @@ class OrderHistoryPage extends ConsumerWidget {
                 return Card(
                   margin: const EdgeInsets.only(bottom: 16),
                   shape: cardShape.copyWith(
-                    side: BorderSide(color: cs.outline.withOpacity(0.3), width: 1.5),
+                    side: BorderSide(color: cs.outline.withValues(alpha: 0.3), width: 1.5),
                   ),
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
@@ -69,7 +69,7 @@ class OrderHistoryPage extends ConsumerWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                               decoration: BoxDecoration(
-                                color: statusColor.withOpacity(0.15),
+                                color: statusColor.withValues(alpha: 0.15),
                                 border: Border.all(color: statusColor, width: 1.5),
                               ),
                               child: Text(
@@ -84,7 +84,7 @@ class OrderHistoryPage extends ConsumerWidget {
                           DateFormat('MMM dd, yyyy - HH:mm').format(order.date),
                           style: tt.bodySmall?.copyWith(color: cs.onSurfaceVariant),
                         ),
-                        Divider(color: cs.outline.withOpacity(0.2), height: 24),
+                        Divider(color: cs.outline.withValues(alpha: 0.2), height: 24),
                         
                         // List items in the order
                         ListView.builder(
@@ -101,7 +101,7 @@ class OrderHistoryPage extends ConsumerWidget {
                                     width: 36,
                                     height: 36,
                                     decoration: BoxDecoration(
-                                      border: Border.all(color: cs.outline.withOpacity(0.2), width: 1),
+                                      border: Border.all(color: cs.outline.withValues(alpha: 0.2), width: 1),
                                     ),
                                     child: item.product.imageUrl.startsWith('data:image') 
                                         ? Image.memory(base64Decode(item.product.imageUrl.split(',').last), fit: BoxFit.cover, errorBuilder: (_,_,_) => const Icon(Icons.error, size: 16))
@@ -135,7 +135,7 @@ class OrderHistoryPage extends ConsumerWidget {
                           },
                         ),
                         
-                        Divider(color: cs.outline.withOpacity(0.2), height: 24),
+                        Divider(color: cs.outline.withValues(alpha: 0.2), height: 24),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -177,6 +177,7 @@ class OrderHistoryPage extends ConsumerWidget {
                               );
                               if (confirm == true) {
                                 await ref.read(ordersProvider.notifier).cancelOrder(order);
+                                if (!context.mounted) return;
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(content: Text('Order has been cancelled and stock restored.')),
                                 );
