@@ -39,12 +39,20 @@ class OrdersNotifier extends Notifier<List<Order>> {
           );
 
           if (oldOrder.status != 'unknown' && oldOrder.status != newOrder.status) {
-            // Status changed! Notify user if it's their order
+            // Show notification to the customer whose order changed
             if (newOrder.userId == currentUserId) {
               LocalNotificationService.showNotification(
                 id: newOrder.id.hashCode,
                 title: 'ORDER UPDATED',
                 body: 'Your order #${newOrder.id.substring(0, 8).toUpperCase()} is now ${newOrder.status.toUpperCase()}',
+                payload: newOrder.id,
+              );
+            } else {
+              // Also show confirmation to admin/current user who updated the status
+              LocalNotificationService.showNotification(
+                id: newOrder.id.hashCode ^ currentUserId.hashCode,
+                title: '✅ ORDER STATUS UPDATED',
+                body: 'Order #${newOrder.id.substring(0, 8).toUpperCase()} → ${newOrder.status.toUpperCase()} (notification sent to customer)',
                 payload: newOrder.id,
               );
             }
