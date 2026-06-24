@@ -7,6 +7,7 @@ import 'core/services/storage_service.dart';
 import 'core/services/firebase_service.dart';
 import 'core/services/notification_service.dart';
 import 'core/providers/theme_provider.dart';
+import 'features/orders/presentation/providers/orders_provider.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -34,6 +35,9 @@ class BustedWorldApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(routerProvider);
     final activeThemeMode = ref.watch(themeProvider);
+    // Keep ordersProvider alive at app level so Firestore listener
+    // is always active and can show local notifications on status change
+    ref.watch(ordersProvider);
 
     return MaterialApp.router(
       title: 'BUSTEDWORLD',
