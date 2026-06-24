@@ -16,14 +16,36 @@ class LocalNotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
+  static const String _channelId = 'order_updates_channel';
+  static const String _channelName = 'Order Updates';
+  static const String _channelDescription = 'Notifications for order status updates';
+
   static Future<void> init() async {
-    if (kIsWeb) return; // Not supported on web
+    if (kIsWeb) return;
 
     try {
       // 1. Setup Firebase Messaging Background Handler
       FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
 
-      // 2. Initialize Local Notifications
+      // 2. Create Android Notification Channel explicitly (required Android 8+)
+      final androidPlugin = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+      if (androidPlugin != null) {
+        await androidPlugin.createNotificationChannel(
+          const AndroidNotificationChannel(
+            _channelId,
+            _channelName,
+            description: _channelDescription,
+            importance: Importance.max,
+            playSound: true,
+            enableVibration: true,
+            showBadge: true,
+          ),
+        );
+        debugPrint('[LocalNotificationService] Notification channel created');
+      }
+
+      // 3. Initialize Local Notifications
       const AndroidInitializationSettings initializationSettingsAndroid =
           AndroidInitializationSettings('@mipmap/ic_launcher');
 
@@ -46,7 +68,14 @@ class LocalNotificationService {
         },
       );
 
-      // 3. Listen to Foreground Messages
+      // 4. Force FCM to show notification even in foreground on Android
+      await FirebaseMessaging.instance.setForegroundNotificationPresentationOptions(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
+
+      // 5. Listen to Foreground Messages
       FirebaseMessaging.onMessage.listen((RemoteMessage message) {
         debugPrint('[FCM] Foreground message received: ${message.messageId}');
         final notification = message.notification;
@@ -60,7 +89,7 @@ class LocalNotificationService {
         }
       });
 
-      // 4. Request permissions
+      // 6. Request permissions
       await requestPermissions();
       debugPrint('[LocalNotificationService] Initialized successfully');
     } catch (e) {
@@ -72,7 +101,7 @@ class LocalNotificationService {
     try {
       // Request FCM permissions
       final messaging = FirebaseMessaging.instance;
-      await messaging.requestPermission(
+      final settings = await messaging.requestPermission(
         alert: true,
         announcement: false,
         badge: true,
@@ -81,12 +110,14 @@ class LocalNotificationService {
         provisional: false,
         sound: true,
       );
+      debugPrint('[LocalNotificationService] FCM permission: ${settings.authorizationStatus}');
 
       // Request Android local notification permissions (Android 13+)
       final androidPlugin = _notificationsPlugin
           .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
       if (androidPlugin != null) {
-        await androidPlugin.requestNotificationsPermission();
+        final granted = await androidPlugin.requestNotificationsPermission();
+        debugPrint('[LocalNotificationService] Android notif permission granted: $granted');
       }
 
       // Request iOS local notification permissions
@@ -125,19 +156,22 @@ class LocalNotificationService {
     if (kIsWeb) return;
 
     try {
-      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
-        'order_updates_channel',
-        'Order Updates',
-        channelDescription: 'Notifications for order status updates',
+      final AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+        _channelId,
+        _channelName,
+        channelDescription: _channelDescription,
         importance: Importance.max,
         priority: Priority.high,
         playSound: true,
         enableVibration: true,
+        ticker: title,
+        styleInformation: BigTextStyleInformation(body),
+        visibility: NotificationVisibility.public,
       );
 
-      const NotificationDetails notificationDetails = NotificationDetails(
+      final NotificationDetails notificationDetails = NotificationDetails(
         android: androidDetails,
-        iOS: DarwinNotificationDetails(
+        iOS: const DarwinNotificationDetails(
           presentAlert: true,
           presentBadge: true,
           presentSound: true,
