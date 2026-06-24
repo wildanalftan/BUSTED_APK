@@ -7,6 +7,7 @@ import 'package:bustedworld/features/orders/domain/entities/order.dart';
 import 'package:bustedworld/core/providers/notification_provider.dart';
 import 'package:bustedworld/features/shop/presentation/providers/products_provider.dart';
 import 'package:bustedworld/core/services/notification_service.dart';
+import 'package:bustedworld/core/services/fcm_sender_service.dart';
 
 class OrdersNotifier extends Notifier<List<Order>> {
   @override
@@ -62,6 +63,34 @@ class OrdersNotifier extends Notifier<List<Order>> {
   Future<void> updateOrderStatus(String orderId, String newStatus) async {
     final docRef = FirebaseFirestore.instance.collection('orders').doc(orderId);
     await docRef.update({'status': newStatus});
+
+    // Send FCM push notification to the customer
+    try {
+      final orderSnapshot = await docRef.get();
+      if (orderSnapshot.exists) {
+        final orderData = orderSnapshot.data();
+        final customerId = orderData?['userId'] as String?;
+        if (customerId != null) {
+          final userSnapshot = await FirebaseFirestore.instance.collection('users').doc(customerId).get();
+          if (userSnapshot.exists) {
+            final userData = userSnapshot.data();
+            final fcmToken = userData?['fcmToken'] as String?;
+            if (fcmToken != null) {
+              await FcmSenderService.sendNotification(
+                recipientToken: fcmToken,
+                title: 'ORDER UPDATED',
+                body: 'Your order #${orderId.substring(0, 8).toUpperCase()} is now ${newStatus.toUpperCase()}',
+                data: {
+                  'orderId': orderId,
+                },
+              );
+            }
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('Failed to send order status notification: $e');
+    }
 
     ref.read(notificationProvider.notifier).add(
       AppNotification(
